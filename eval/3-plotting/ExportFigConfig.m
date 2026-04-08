@@ -6,7 +6,7 @@ classdef ExportFigConfig
         paperwidth = 8; % figure width
         paperheight = 4; % figure height
         linewidth = 0.5;
-        linewidth_timing_boxes = 5; % boxes in runtime plots (e.g., plot_runtime_for_step) are drawn as thick lines
+        linewidth_timing_boxes = 5; % boxes in `plot_computation_time_for_step` are actually lines
         fontname = 'Times';
         markersize = 3;
     end
@@ -122,7 +122,6 @@ classdef ExportFigConfig
                 obj
                 optional
             end
-
 
             for field = fieldnames(optional)'
 
