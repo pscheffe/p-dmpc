@@ -78,6 +78,22 @@ function eval_prioritization(optional)
             writelines(matrix_to_pgf_array(adjacency), fullfile(optional.base_folder, 'mpa-adjacency.dat'));
 
             %%
+            %    ____
+            %   / __/_ _____________ ___ ___
+            %  _\ \/ // / __/ __/ -_|_-<(_-<
+            % /___/\_,_/\__/\__/\__/___/___/
+
+            [success_rate, is_deadlocked] = data_success_rate(experiment_results);
+
+            % data export
+            n_vehicles = [experiment_results(:, 1, 1).n_hlc]';
+            success_table = array2table([n_vehicles, success_rate], ...
+                VariableNames = ["N_A"; priority_table_headings] ...
+            );
+            filename = sprintf('6-prioritization_success_%s_%s.dat', scenario, optimizer);
+            writetable(success_table, fullfile(base_folder_prioritization, filename));
+
+            %%
             %    ______           __
             %   / ____/___  _____/ /_
             %  / /   / __ \/ ___/ __/
@@ -103,6 +119,34 @@ function eval_prioritization(optional)
                 VariableNames = ["N_A"; priority_table_headings] ...
             );
             filename = sprintf('6-prioritization_cost_%s_%s.dat', scenario, optimizer);
+            writetable(cost_table, fullfile(base_folder_prioritization, filename));
+
+            % COST ONLY WHERE ALL APPROACHES SUCCEEDED
+            cost_succeeded_percent_average = zeros([numel(n_vehicles), numel(priority_strategies)]);
+
+            for i_vehicles = 1:numel(n_vehicles)
+                valid_seed_mask = squeeze(all(~is_deadlocked(i_vehicles, :, :), 2)).';
+                assert(any(valid_seed_mask), "No valid seeds for %d vehicles", n_vehicles(i_vehicles));
+                cost_succeeded_percent_average(i_vehicles, :) = data_cost_percent(experiment_results(i_vehicles, :, valid_seed_mask));
+            end
+
+            figure(visible = 'off');
+            filename = sprintf('6-prioritization_cost_succeeded_%s_%s.pdf', scenario, optimizer);
+            export_plot( ...
+                @series_plot_value, ...
+                experiment_results, ...
+                cost_succeeded_percent_average, ...
+                priority_names, ...
+                file_path = fullfile(base_folder_prioritization, filename) ...
+            );
+            close all;
+
+            % data export
+            n_vehicles = [experiment_results(:, 1, 1).n_hlc]';
+            cost_table = array2table([n_vehicles, cost_succeeded_percent_average], ...
+                VariableNames = ["N_A"; priority_table_headings] ...
+            );
+            filename = sprintf('6-prioritization_cost_succeeded_%s_%s.dat', scenario, optimizer);
             writetable(cost_table, fullfile(base_folder_prioritization, filename));
 
             %%
