@@ -30,7 +30,7 @@ classdef HlcFactory
 
             if options.is_prioritized
 
-                if length(vehicle_indices_controlled) == 1
+                if isscalar(vehicle_indices_controlled)
                     % Prioritized controller for exactly 1 vehicle. Communicates
                     % with the other HLCs
                     if options.priority == PriorityStrategies.optimal_priority
