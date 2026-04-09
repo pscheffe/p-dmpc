@@ -508,14 +508,17 @@ classdef (Abstract) HighLevelController < handle
         function end_run(obj)
             % end run of controller
             % this function is executed in every case
+            obj.final_operations_on_objects();
+            obj.delete_objects();
+        end
 
+        function final_operations_on_objects(obj)
             % save finished or unfinished ExperimentResult
             obj.save_results();
-
-            % run plant's end_run function
             obj.plant.end_run();
+        end
 
-            % clean up controller
+        function delete_objects(obj)
             obj.free_objects();
         end
 

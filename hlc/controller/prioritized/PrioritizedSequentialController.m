@@ -165,8 +165,12 @@ classdef PrioritizedSequentialController < HighLevelController
         function end_run(obj)
 
             for hlc = obj.hlcs
-                hlc.end_run();
+                hlc.final_operations_on_objects();
                 obj.experiment_result{end + 1} = hlc.experiment_result;
+            end
+
+            for hlc = obj.hlcs
+                hlc.delete_objects();
             end
 
         end
