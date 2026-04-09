@@ -10,6 +10,7 @@ function experiment_results = eval_experiments(optional)
         optional.priority_strategies (1, :) PriorityStrategies = PriorityStrategies.constant_priority
         optional.max_num_CLs (1, :) double = 99;
         optional.Hp (1, 1) double = 6;
+        optional.seeds (1, :) double = 1:20;
     end
 
     arguments (Output)
@@ -25,7 +26,7 @@ function experiment_results = eval_experiments(optional)
     options.T_end = 7;
     % Scenario-specific config
     if options.scenario_type == ScenarioType.commonroad
-        seeds = 1:3;
+        seeds = optional.seeds;
         n_vehicles_array = 5:5:20;
     elseif options.scenario_type == ScenarioType.circle
         seeds = 1;
