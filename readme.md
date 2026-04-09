@@ -66,6 +66,11 @@ More detailed information including troubleshooting can be found [in ./docs/Setu
    - Options that do not work in this setup are:
      - Environments: CPM Lab
 
+Useful shortcuts:
+
+- `repeat` repeats the previous experiment
+- `replay(experiment_result)` gives a graphical replay of the `experiment_result`. Press `h` for an overview of hotkeys in the figure.
+
 More detailed information including lab experiments can be found [in ./docs/Run_Experiments.md](./docs/Run_Experiments.md).
 
 ## References

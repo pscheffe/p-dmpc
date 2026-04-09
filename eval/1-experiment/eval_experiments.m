@@ -13,7 +13,7 @@ function experiment_results = eval_experiments(optional)
     end
 
     arguments (Output)
-        experiment_results (:, :, :) ExperimentResult % (n_vehicles x n_approaches x n_scenarios)
+        experiment_results (:, :, :) ExperimentResult % (n_vehicles x n_approaches x n_seeds)
     end
 
     assert(isscalar(optional.max_num_CLs) ...
@@ -42,8 +42,7 @@ function experiment_results = eval_experiments(optional)
 
     experiment_results = ExperimentResult.empty();
 
-    % experiment result in order (n_vehicles x n_approaches x n_scenarios)
-    % number of different random scenarios per priority assignment and #vehicles
+    % experiment result in order (n_vehicles x n_approaches x n_seeds)
     for seed = seeds
 
         for n_vehicles = n_vehicles_array
