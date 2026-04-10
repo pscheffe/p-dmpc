@@ -40,6 +40,7 @@ function experiment_results = eval_experiments(optional)
     options.optimizer_type = optional.optimizer;
     options.mpa_type = MpaType.triple_speed;
     options.Hp = optional.Hp;
+    options.should_do_dry_run = 1;
 
     experiment_results = ExperimentResult.empty();
 
