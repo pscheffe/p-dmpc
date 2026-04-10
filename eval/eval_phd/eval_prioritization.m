@@ -371,7 +371,10 @@ function eval_prioritization(optional)
 
             if optional.should_create_snapshots
 
-                for experiment_result = experiment_results(:)'
+                for i_experiment = 1:numel(experiment_results)
+
+                    experiment_result = experiment_results(i_experiment);
+                    [~, ~, seed] = ind2sub(size(experiment_results), i_experiment);
 
                     if (experiment_result.hlc_indices == -1)
                         continue;
@@ -390,10 +393,10 @@ function eval_prioritization(optional)
 
                     % Skip if all data present
                     filebase = sprintf( ...
-                        '6-%d_%s_seed%d_%s', ...
+                        '6-%d_%s_seed_%02d_%s', ...
                         experiment_result.options.amount, ...
                         char(experiment_result.options.scenario_type), ...
-                        mod(prod(experiment_result.options.path_ids), 61), ...
+                        seed, ...
                         char(experiment_result.options.priority) ...
                     );
 
@@ -407,17 +410,9 @@ function eval_prioritization(optional)
                     plotter = PlotterOffline(experiment_result);
                     plotter.set_figure_visibility(false);
 
-                    for step = 1:experiment_result.n_steps
+                    for step = experiment_result.n_steps:experiment_result.n_steps
 
                         % skip if data for current step is present
-                        filebase = sprintf( ...
-                            '6-%d_%s_seed%d_%s', ...
-                            experiment_result.options.amount, ...
-                            char(experiment_result.options.scenario_type), ...
-                            mod(prod(experiment_result.options.path_ids), 61), ...
-                            char(experiment_result.options.priority) ...
-                        );
-
                         filebase_step = sprintf('%s_k%d', filebase, step);
 
                         if isfile(fullfile(experiment_folder, strcat(filebase_step, '_coupling_parallel.dat')))
@@ -427,13 +422,13 @@ function eval_prioritization(optional)
                         % plot snapshots
                         plotter.set_time_step(step);
                         plotter.plot();
-                        step_indices_str = sprintf("_%02d", step);
-                        filename = strcat(experiment_result.file_name, "_snapshot", step_indices_str, ".png");
                         file_path = fullfile( ...
                             experiment_folder, ...
-                            filename ...
+                            strcat(filebase_step, '_snapshot.jpg') ...
                         );
                         export_fig(plotter.get_figure(), file_path, is_vector_graphic = false);
+
+                        continue;
 
                         % vehicle poses
                         poses = experiment_result.iteration_data(step).x0(:, 1:3);
