@@ -64,22 +64,48 @@ classdef IterationData
             obj.fallbacks = false(nVeh, 1);
         end
 
-        function equal = isequal(obj, compare_obj)
+        function equal = isequal(obj, compare_obj, show_textual_output)
 
             arguments
                 obj (1, 1) IterationData;
                 compare_obj (1, 1) IterationData;
+                show_textual_output (1, 1) logical = false;
             end
 
-            equal = obj.amount == compare_obj.amount;
+            fields_to_compare = {
+                                 'reference_trajectory_points'
+                                 'x0'
+                                 'trim_indices'
+                                 'predicted_lanelet_boundary'
+                                 'obstacles'
+                                 'dynamic_obstacle_area'
+                                 'hdv_reachable_sets'
+                                 'hdv_adjacency'
+                                 'adjacency'
+                                 'weighted_coupling'
+                                 'directed_coupling'
+                                 'directed_coupling_sequential'
+                                 'amount'
+                                 'number_of_computation_levels'
+                                 };
 
-            for i_veh = 1:obj.amount
-                equal = equal && ~any(abs(obj.x0(i_veh) - compare_obj.x0(i_veh)));
+            equal = true;
+            differing_fields = {};
 
-                if (~equal)
-                    return;
+            for i_field = 1:numel(fields_to_compare)
+                field_name = fields_to_compare{i_field};
+                field_equal = builtin('isequal', obj.(field_name), compare_obj.(field_name));
+
+                if ~field_equal
+                    equal = false;
+                    differing_fields{end + 1} = field_name; %#ok<AGROW>
+
                 end
 
+            end
+
+            if show_textual_output && ~equal
+                fprintf('IterationData differs in fields: %s\n', strjoin(differing_fields, ', '));
             end
 
         end
