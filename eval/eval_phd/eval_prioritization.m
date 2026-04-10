@@ -482,6 +482,8 @@ function eval_prioritization(optional)
                         );
                     end
 
+                    close all;
+
                 end
 
             end
