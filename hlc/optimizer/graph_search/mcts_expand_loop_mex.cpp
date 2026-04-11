@@ -3,12 +3,31 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace {
 
 constexpr mwIndex kRootNodeIndex = 0;
+
+struct Segment {
+    double x1;
+    double y1;
+    double x2;
+    double y2;
+};
+
+enum class ConstraintMode {
+    Callback,
+    InterX
+};
+
+struct InterXPayload {
+    const mxArray* vehicle_obstacles;
+    const mxArray* hdv_obstacles;
+    const mxArray* lanelet_boundary;
+};
 
 mwSize getScalarSizeT(const mxArray* array, const char* name) {
     if (!mxIsDouble(array) || mxIsComplex(array) || mxGetNumberOfElements(array) != 1) {
@@ -30,6 +49,22 @@ double getScalarDouble(const mxArray* array, const char* name) {
     }
 
     return mxGetScalar(array);
+}
+
+std::string getString(const mxArray* array, const char* name) {
+    if (!mxIsChar(array)) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "%s must be a character array.", name);
+    }
+
+    char* raw = mxArrayToString(array);
+
+    if (raw == nullptr) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Failed to parse %s.", name);
+    }
+
+    std::string result(raw);
+    mxFree(raw);
+    return result;
 }
 
 unsigned char* getUint8Data(mxArray* array, const char* name) {
@@ -166,6 +201,193 @@ bool callConstraintChecker(const mxArray* constraint_checker, const mxArray* sha
     return is_valid;
 }
 
+bool isAllNan(const mxArray* matrix) {
+    if (!mxIsDouble(matrix) || mxIsComplex(matrix)) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Obstacle matrices must be real double.");
+    }
+
+    const mwSize count = mxGetNumberOfElements(matrix);
+    const double* values = mxGetPr(matrix);
+
+    for (mwSize i = 0; i < count; ++i) {
+        if (!mxIsNaN(values[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+std::vector<Segment> buildSegments(const mxArray* matrix) {
+    if (!mxIsDouble(matrix) || mxIsComplex(matrix) || mxGetM(matrix) != 2) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Polyline matrices must be 2xN real double.");
+    }
+
+    const mwSize n_cols = mxGetN(matrix);
+    const double* values = mxGetPr(matrix);
+    std::vector<Segment> segments;
+
+    bool has_previous = false;
+    double px = 0.0;
+    double py = 0.0;
+
+    for (mwIndex col = 0; col < n_cols; ++col) {
+        const double x = values[col * 2];
+        const double y = values[col * 2 + 1];
+        const bool is_separator = mxIsNaN(x) || mxIsNaN(y);
+
+        if (is_separator) {
+            has_previous = false;
+            continue;
+        }
+
+        if (has_previous) {
+            segments.push_back(Segment{px, py, x, y});
+        }
+
+        px = x;
+        py = y;
+        has_previous = true;
+    }
+
+    return segments;
+}
+
+double orientation(const Segment& reference, double x, double y) {
+    return (reference.y2 - reference.y1) * (x - reference.x2) - (reference.x2 - reference.x1) * (y - reference.y2);
+}
+
+bool onSegment(double ax, double ay, double bx, double by, double px, double py) {
+    constexpr double eps = 1e-12;
+    const bool within_x = (px <= std::max(ax, bx) + eps) && (px >= std::min(ax, bx) - eps);
+    const bool within_y = (py <= std::max(ay, by) + eps) && (py >= std::min(ay, by) - eps);
+    return within_x && within_y;
+}
+
+int signWithTolerance(double value) {
+    constexpr double eps = 1e-12;
+
+    if (value > eps) {
+        return 1;
+    }
+
+    if (value < -eps) {
+        return -1;
+    }
+
+    return 0;
+}
+
+bool segmentsIntersect(const Segment& a, const Segment& b) {
+    const double o1_val = (a.y2 - a.y1) * (b.x1 - a.x2) - (a.x2 - a.x1) * (b.y1 - a.y2);
+    const double o2_val = (a.y2 - a.y1) * (b.x2 - a.x2) - (a.x2 - a.x1) * (b.y2 - a.y2);
+    const double o3_val = (b.y2 - b.y1) * (a.x1 - b.x2) - (b.x2 - b.x1) * (a.y1 - b.y2);
+    const double o4_val = (b.y2 - b.y1) * (a.x2 - b.x2) - (b.x2 - b.x1) * (a.y2 - b.y2);
+
+    const int o1 = signWithTolerance(o1_val);
+    const int o2 = signWithTolerance(o2_val);
+    const int o3 = signWithTolerance(o3_val);
+    const int o4 = signWithTolerance(o4_val);
+
+    if ((o1 != o2) && (o3 != o4)) {
+        return true;
+    }
+
+    if ((o1 == 0) && onSegment(a.x1, a.y1, a.x2, a.y2, b.x1, b.y1)) {
+        return true;
+    }
+
+    if ((o2 == 0) && onSegment(a.x1, a.y1, a.x2, a.y2, b.x2, b.y2)) {
+        return true;
+    }
+
+    if ((o3 == 0) && onSegment(b.x1, b.y1, b.x2, b.y2, a.x1, a.y1)) {
+        return true;
+    }
+
+    if ((o4 == 0) && onSegment(b.x1, b.y1, b.x2, b.y2, a.x2, a.y2)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool hasAnyIntersection(const mxArray* polyline_a, const mxArray* polyline_b) {
+    const std::vector<Segment> segments_a = buildSegments(polyline_a);
+    const std::vector<Segment> segments_b = buildSegments(polyline_b);
+
+    for (const Segment& sa : segments_a) {
+        for (const Segment& sb : segments_b) {
+            if (segmentsIntersect(sa, sb)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool callInterXConstraint(const InterXPayload& payload, const mxArray* shape, const mxArray* boundary_shape, mwIndex i_step) {
+    if (!mxIsCell(payload.vehicle_obstacles) || !mxIsCell(payload.hdv_obstacles)) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "InterX payload obstacle containers must be cell arrays.");
+    }
+
+    const mwIndex step_idx = i_step - 1;
+    const mxArray* vehicle_obstacles = getCellElement(payload.vehicle_obstacles, 0, step_idx, "vehicle_obstacles");
+
+    if (vehicle_obstacles != nullptr && hasAnyIntersection(shape, vehicle_obstacles)) {
+        return false;
+    }
+
+    const mxArray* hdv_obstacles = getCellElement(payload.hdv_obstacles, 0, step_idx, "hdv_obstacles");
+
+    if ((hdv_obstacles != nullptr) && !isAllNan(hdv_obstacles) && hasAnyIntersection(shape, hdv_obstacles)) {
+        return false;
+    }
+
+    if (hasAnyIntersection(boundary_shape, payload.lanelet_boundary)) {
+        return false;
+    }
+
+    return true;
+}
+
+ConstraintMode parseConstraintMode(const mxArray* payload) {
+    if (!mxIsStruct(payload)) {
+        return ConstraintMode::Callback;
+    }
+
+    const mxArray* mode_field = mxGetField(payload, 0, "mode");
+
+    if (mode_field == nullptr) {
+        return ConstraintMode::Callback;
+    }
+
+    const std::string mode = getString(mode_field, "constraint_payload.mode");
+
+    if (mode == "interx") {
+        return ConstraintMode::InterX;
+    }
+
+    return ConstraintMode::Callback;
+}
+
+InterXPayload parseInterXPayload(const mxArray* payload) {
+    if (!mxIsStruct(payload)) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "InterX mode requires a struct payload.");
+    }
+
+    const mxArray* vehicle_obstacles = mxGetField(payload, 0, "vehicle_obstacles");
+    const mxArray* hdv_obstacles = mxGetField(payload, 0, "hdv_obstacles");
+    const mxArray* lanelet_boundary = mxGetField(payload, 0, "lanelet_boundary");
+
+    if (vehicle_obstacles == nullptr || hdv_obstacles == nullptr || lanelet_boundary == nullptr) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "InterX payload missing required fields.");
+    }
+
+    return InterXPayload{vehicle_obstacles, hdv_obstacles, lanelet_boundary};
+}
+
 double squaredDistanceToReference(const double node_pose[3], const double* reference_points, mwIndex i_step) {
     const mwSize rows = 2;
     const mwIndex column = i_step - 1;
@@ -182,8 +404,8 @@ void writeScalarField(mxArray* structure, mwIndex index, const char* field_name,
 } // namespace
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
-    if (nrhs != 13) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Expected 13 inputs.");
+    if (nrhs != 14) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Expected 14 inputs.");
     }
 
     if (nlhs > 1) {
@@ -232,6 +454,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     const mxArray* all_successor_trims = prhs[5];
     const mxArray* maneuvers = prhs[6];
     const mxArray* constraint_checker = prhs[12];
+    const mxArray* constraint_payload = prhs[13];
+
+    const ConstraintMode constraint_mode = parseConstraintMode(constraint_payload);
+    std::unique_ptr<InterXPayload> interx_payload;
+
+    if (constraint_mode == ConstraintMode::InterX) {
+        interx_payload = std::make_unique<InterXPayload>(parseInterXPayload(constraint_payload));
+    }
 
     unsigned char* trims = getUint8Data(trims_out, "trims");
     std::uint32_t* parents = getUint32Data(parents_out, "parents");
@@ -363,7 +593,11 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                 shape_for_boundary_check_matrix = translatePolygon(area_large_offset_array, c, s, start_x, start_y);
             }
 
-            is_valid = callConstraintChecker(constraint_checker, shape_matrix, shape_for_boundary_check_matrix, i_step);
+            if (constraint_mode == ConstraintMode::InterX) {
+                is_valid = callInterXConstraint(*interx_payload, shape_matrix, shape_for_boundary_check_matrix, i_step);
+            } else {
+                is_valid = callConstraintChecker(constraint_checker, shape_matrix, shape_for_boundary_check_matrix, i_step);
+            }
 
             if (!is_valid) {
                 children[child_row + node_parent * n_successor_trims_max] = 0;
