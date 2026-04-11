@@ -1,4 +1,4 @@
-function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
+function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop, constraint_mode)
     % BENCHMARK_MCTS_EXPAND_LOOP  Measure runtime for the extracted MCTS core.
 
     if nargin < 1
@@ -9,7 +9,12 @@ function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
         use_cpp_loop = false;
     end
 
+    if nargin < 3
+        constraint_mode = 'callback';
+    end
+
     [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs();
+    constraint_payload = createConstraintPayload(constraint_mode);
     mex_available = exist('mcts_expand_loop_mex', 'file') == 3;
 
     elapsed = zeros(iterations, 1);
@@ -30,7 +35,8 @@ function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
             children, ...
             shapes_tmp, ...
             n_nodes, ...
-            constraint_checker ...
+            constraint_checker, ...
+            constraint_payload ...
         );
         elapsed(k) = toc;
     end
@@ -43,6 +49,7 @@ function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
     stats.max_seconds = max(elapsed);
     stats.use_cpp_loop = use_cpp_loop;
     stats.mex_available = mex_available;
+    stats.constraint_mode = constraint_mode;
 
     backend_name = 'MATLAB';
 
@@ -50,8 +57,26 @@ function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
         backend_name = 'MEX';
     end
 
-    fprintf('MCTS loop benchmark (%s backend) over %d iterations: mean %.6f s, median %.6f s\n', ...
-        backend_name, stats.iterations, stats.mean_seconds, stats.median_seconds);
+    fprintf('MCTS loop benchmark (%s backend, %s constraints) over %d iterations: mean %.6f s, median %.6f s\n', ...
+        backend_name, constraint_mode, stats.iterations, stats.mean_seconds, stats.median_seconds);
+end
+
+function constraint_payload = createConstraintPayload(constraint_mode)
+    switch lower(constraint_mode)
+        case 'interx'
+            far_polygon = [100 101 101 100 100; 100 100 101 101 100];
+            vehicle_obstacles = {far_polygon, far_polygon};
+            hdv_obstacles = {far_polygon, far_polygon};
+            lanelet_boundary = [100 120; 100 120];
+            constraint_payload = struct( ...
+                'mode', 'interx', ...
+                'vehicle_obstacles', {vehicle_obstacles}, ...
+                'hdv_obstacles', {hdv_obstacles}, ...
+                'lanelet_boundary', lanelet_boundary ...
+            );
+        otherwise
+            constraint_payload = struct('mode', 'callback');
+    end
 end
 
 function [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs()
