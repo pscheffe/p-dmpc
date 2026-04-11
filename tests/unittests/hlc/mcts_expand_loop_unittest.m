@@ -1,5 +1,5 @@
 function tests = mcts_expand_loop_unittest
-% MCTS_EXPAND_LOOP_UNITTEST  Regression tests for the extracted MCTS loop.
+    % MCTS_EXPAND_LOOP_UNITTEST  Regression tests for the extracted MCTS loop.
 
     tests = functiontests(localfunctions);
 end
@@ -41,11 +41,11 @@ function testGatewayFallsBackToMatlabAndIsDeterministic(testcase)
         constraint_checker ...
     );
 
-    verifyEqual(testcase, result_a.best_node_id, result_b.best_node_id);
-    verifyEqual(testcase, result_a.best_cost, result_b.best_cost);
-    verifyEqual(testcase, result_a.n_expansions, result_b.n_expansions);
-    verifyEqual(testcase, result_a.trims, result_b.trims);
-    verifyEqual(testcase, result_a.parents, result_b.parents);
+    verifyTrue(testcase, isequal(result_a.best_node_id, result_b.best_node_id));
+    verifyTrue(testcase, isequal(result_a.best_cost, result_b.best_cost));
+    verifyTrue(testcase, isequal(result_a.n_expansions, result_b.n_expansions));
+    verifyTrue(testcase, isequal(result_a.trims, result_b.trims));
+    verifyTrue(testcase, isequal(result_a.parents, result_b.parents));
 end
 
 function [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs()
@@ -60,7 +60,9 @@ function [root_pose, reference_trajectory_points, random_numbers, all_successor_
     all_successor_trims{2, 2} = uint8([1 2]);
 
     maneuvers = cell(2, 2);
+
     for start_trim = 1:2
+
         for goal_trim = 1:2
             maneuver.dpose = [1; 0; 0];
             maneuver.area_without_offset = [0 1 1 0; 0 0 1 1];
@@ -68,6 +70,7 @@ function [root_pose, reference_trajectory_points, random_numbers, all_successor_
             maneuver.area_large_offset = [0 1 1 0; 0 0 1 1];
             maneuvers{start_trim, goal_trim} = maneuver;
         end
+
     end
 
     trims = zeros(1, 11, 'uint8');
