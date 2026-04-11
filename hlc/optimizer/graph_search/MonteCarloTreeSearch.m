@@ -15,6 +15,7 @@ classdef MonteCarloTreeSearch < OptimizerInterface
             obj = obj@OptimizerInterface();
             obj.rand_stream = RandStream('mt19937ar', Seed = 42);
             config_file = fullfile('config/mcts.json');
+            has_use_cpp_loop = false;
 
             if isfile(config_file)
                 mcts_config = jsondecode(fileread(config_file));
@@ -24,6 +25,12 @@ classdef MonteCarloTreeSearch < OptimizerInterface
                     obj.(field_name) = mcts_config.(field_name);
                 end
 
+                has_use_cpp_loop = isfield(mcts_config, 'use_cpp_loop');
+
+            end
+
+            if ~has_use_cpp_loop && exist('mcts_expand_loop_mex', 'file') == 3
+                obj.use_cpp_loop = true;
             end
 
         end

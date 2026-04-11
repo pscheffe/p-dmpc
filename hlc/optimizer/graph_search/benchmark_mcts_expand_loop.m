@@ -1,17 +1,23 @@
-function stats = benchmark_mcts_expand_loop(iterations)
-    % BENCHMARK_MCTS_EXPAND_LOOP  Measure MATLAB loop runtime for the extracted MCTS core.
+function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop)
+    % BENCHMARK_MCTS_EXPAND_LOOP  Measure runtime for the extracted MCTS core.
 
     if nargin < 1
         iterations = 25;
     end
 
+    if nargin < 2
+        use_cpp_loop = false;
+    end
+
     [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs();
+    mex_available = exist('mcts_expand_loop_mex', 'file') == 3;
 
     elapsed = zeros(iterations, 1);
 
     for k = 1:iterations
         tic;
-        mcts_expand_loop_matlab( ...
+        mcts_expand_loop_gateway( ...
+            use_cpp_loop, ...
             10, ...
             2, ...
             root_pose, ...
@@ -35,9 +41,17 @@ function stats = benchmark_mcts_expand_loop(iterations)
     stats.median_seconds = median(elapsed);
     stats.min_seconds = min(elapsed);
     stats.max_seconds = max(elapsed);
+    stats.use_cpp_loop = use_cpp_loop;
+    stats.mex_available = mex_available;
 
-    fprintf('MCTS loop benchmark over %d iterations: mean %.6f s, median %.6f s\n', ...
-        stats.iterations, stats.mean_seconds, stats.median_seconds);
+    backend_name = 'MATLAB';
+
+    if use_cpp_loop && mex_available
+        backend_name = 'MEX';
+    end
+
+    fprintf('MCTS loop benchmark (%s backend) over %d iterations: mean %.6f s, median %.6f s\n', ...
+        backend_name, stats.iterations, stats.mean_seconds, stats.median_seconds);
 end
 
 function [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs()
