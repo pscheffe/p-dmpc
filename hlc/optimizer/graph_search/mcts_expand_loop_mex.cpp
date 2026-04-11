@@ -146,11 +146,11 @@ mxArray* makeSingleShapeCell(const mxArray* polygon, double c, double s, double 
     return shape_cell;
 }
 
-bool callConstraintChecker(const mxArray* constraint_checker, mxArray* shapes, mxArray* boundary_shapes, mwIndex i_step) {
+bool callConstraintChecker(const mxArray* constraint_checker, const mxArray* shape, const mxArray* boundary_shape, mwIndex i_step) {
     mxArray* rhs[4];
     rhs[0] = const_cast<mxArray*>(constraint_checker);
-    rhs[1] = shapes;
-    rhs[2] = boundary_shapes;
+    rhs[1] = const_cast<mxArray*>(shape);
+    rhs[2] = const_cast<mxArray*>(boundary_shape);
     rhs[3] = mxCreateDoubleScalar(static_cast<double>(i_step));
 
     mxArray* result = nullptr;
@@ -342,18 +342,13 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             ++n_expansions;
             node_parent = node_id;
 
-            mxArray* shapes_matrix = translatePolygon(area_array, c, s, start_x, start_y);
-            mxArray* shapes_cell = mxCreateCellMatrix(1, 1);
-            mxSetCell(shapes_cell, 0, shapes_matrix);
-
-            mxArray* shapes_without_offset_matrix = translatePolygon(area_without_offset_array, c, s, start_x, start_y);
-            mxArray* shapes_without_offset_cell = mxCreateCellMatrix(1, 1);
-            mxSetCell(shapes_without_offset_cell, 0, shapes_without_offset_matrix);
-            mxArray* shapes_for_boundary_check = nullptr;
+            mxArray* shape_matrix = translatePolygon(area_array, c, s, start_x, start_y);
+            mxArray* shape_without_offset_matrix = translatePolygon(area_without_offset_array, c, s, start_x, start_y);
+            mxArray* shape_for_boundary_check_matrix = nullptr;
             mxArray* child_successor_cell = nullptr;
 
             if (i_step != Hp) {
-                shapes_for_boundary_check = shapes_without_offset_cell;
+                shape_for_boundary_check_matrix = shape_without_offset_matrix;
                 const std::vector<unsigned char> child_successor_trims = getUint8VectorFromCell(all_successor_trims, goal_trim - 1, i_step, "all_successor_trims");
 
                 if (!child_successor_trims.empty()) {
@@ -365,22 +360,22 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                     }
                 }
             } else {
-                shapes_for_boundary_check = makeSingleShapeCell(area_large_offset_array, c, s, start_x, start_y);
+                shape_for_boundary_check_matrix = translatePolygon(area_large_offset_array, c, s, start_x, start_y);
             }
 
-            is_valid = callConstraintChecker(constraint_checker, shapes_cell, shapes_for_boundary_check, i_step);
+            is_valid = callConstraintChecker(constraint_checker, shape_matrix, shape_for_boundary_check_matrix, i_step);
 
             if (!is_valid) {
                 children[child_row + node_parent * n_successor_trims_max] = 0;
-                mxDestroyArray(shapes_cell);
-                mxDestroyArray(shapes_without_offset_cell);
+                mxDestroyArray(shape_matrix);
+                mxDestroyArray(shape_without_offset_matrix);
 
                 if (i_step != Hp) {
                     if (child_successor_cell != nullptr) {
                         mxDestroyArray(child_successor_cell);
                     }
                 } else {
-                    mxDestroyArray(shapes_for_boundary_check);
+                    mxDestroyArray(shape_for_boundary_check_matrix);
                 }
 
                 break;
@@ -404,18 +399,18 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             }
 
             children[child_row + (node_parent - 1) * n_successor_trims_max] = static_cast<std::uint32_t>(n_nodes);
-            mxSetCell(shapes_tmp_out, n_nodes - 1, mxDuplicateArray(shapes_matrix));
-            mxDestroyArray(shapes_cell);
+            mxSetCell(shapes_tmp_out, n_nodes - 1, mxDuplicateArray(shape_matrix));
+            mxDestroyArray(shape_matrix);
             node_id = n_nodes;
 
-            mxDestroyArray(shapes_without_offset_cell);
+            mxDestroyArray(shape_without_offset_matrix);
 
             if (i_step != Hp) {
                 if (child_successor_cell != nullptr) {
                     mxDestroyArray(child_successor_cell);
                 }
             } else {
-                mxDestroyArray(shapes_for_boundary_check);
+                mxDestroyArray(shape_for_boundary_check_matrix);
             }
         }
 

@@ -82,18 +82,18 @@ function loop_result = mcts_expand_loop_matlab( ...
             n_expansions = n_expansions + 1;
             node_parent = node_id;
 
-            shapes_without_offset = {transform(1:2, 1:2) * maneuver.area_without_offset + start_pose(1:2)};
-            shapes = {transform(1:2, 1:2) * maneuver.area + start_pose(1:2)};
+            shape_without_offset = transform(1:2, 1:2) * maneuver.area_without_offset + start_pose(1:2);
+            shape = transform(1:2, 1:2) * maneuver.area + start_pose(1:2);
 
             if i_step ~= Hp
-                shapes_for_boundary_check = shapes_without_offset;
+                shape_for_boundary_check = shape_without_offset;
                 child_successor_trims = all_successor_trims{goal_trim, i_step + 1};
             else
-                shapes_for_boundary_check = {transform(1:2, 1:2) * maneuver.area_large_offset + start_pose(1:2)};
+                shape_for_boundary_check = transform(1:2, 1:2) * maneuver.area_large_offset + start_pose(1:2);
                 child_successor_trims = [];
             end
 
-            is_valid = constraint_checker(shapes, shapes_for_boundary_check, i_step);
+            is_valid = constraint_checker(shape, shape_for_boundary_check, i_step);
 
             if ~is_valid
                 % Remove invalid edge.
@@ -107,7 +107,7 @@ function loop_result = mcts_expand_loop_matlab( ...
             trims(:, n_nodes) = goal_trim;
             children(1:size(child_successor_trims, 2), n_nodes) = 1;
             children(child_position, node_parent) = n_nodes;
-            shapes_tmp(:, n_nodes) = shapes;
+            shapes_tmp(:, n_nodes) = {shape};
             node_id = n_nodes;
         end
 
