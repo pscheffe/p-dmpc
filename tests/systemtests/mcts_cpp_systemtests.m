@@ -45,7 +45,7 @@ end
 function ensure_mcts_mex_is_available(testCase)
 
     if exist('mcts_expand_loop_mex', 'file') ~= 3
-        build_mcts_expand_loop_mex();
+        compile_mcts_expand_loop_mex();
     end
 
     testCase.verifyEqual(exist('mcts_expand_loop_mex', 'file'), 3);
