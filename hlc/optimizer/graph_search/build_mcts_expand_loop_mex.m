@@ -1,7 +1,7 @@
 function build_mcts_expand_loop_mex()
-    % BUILD_MCTS_EXPAND_LOOP_MEX  Compile the MCTS loop MEX prototype.
+    % BUILD_MCTS_EXPAND_LOOP_MEX  Compile the MCTS loop MEX.
     %
-    % This compiles the loop-only MEX used by mcts_expand_loop_gateway.
+    % This compiles the MEX used by CppSampled optimizer.
 
     source_file = fullfile(fileparts(mfilename('fullpath')), 'mcts_expand_loop_mex.cpp');
 

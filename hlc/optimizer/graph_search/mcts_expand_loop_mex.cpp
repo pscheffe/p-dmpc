@@ -18,10 +18,7 @@ struct Segment {
     double y2;
 };
 
-enum class ConstraintMode {
-    Callback,
-    InterX
-};
+// MEX loop only supports native InterX constraint checking (no MATLAB callbacks)
 
 struct InterXPayload {
     const mxArray* vehicle_obstacles;
@@ -259,26 +256,6 @@ mxArray* makeSingleShapeCell(const mxArray* polygon, double c, double s, double 
     return shape_cell;
 }
 
-bool callConstraintChecker(const mxArray* constraint_checker, const mxArray* shape, const mxArray* boundary_shape, mwIndex i_step) {
-    mxArray* rhs[4];
-    rhs[0] = const_cast<mxArray*>(constraint_checker);
-    rhs[1] = const_cast<mxArray*>(shape);
-    rhs[2] = const_cast<mxArray*>(boundary_shape);
-    rhs[3] = mxCreateDoubleScalar(static_cast<double>(i_step));
-
-    mxArray* result = nullptr;
-    const int status = mexCallMATLAB(1, &result, 4, rhs, "feval");
-    mxDestroyArray(rhs[3]);
-
-    if (status != 0 || result == nullptr) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:CallbackFailed", "Constraint checker callback failed.");
-    }
-
-    const bool is_valid = mxGetScalar(result) != 0.0;
-    mxDestroyArray(result);
-    return is_valid;
-}
-
 bool isAllNan(const mxArray* matrix) {
     if (!mxIsDouble(matrix) || mxIsComplex(matrix)) {
         mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Obstacle matrices must be real double.");
@@ -434,40 +411,18 @@ bool callInterXConstraint(const InterXPayload& payload, const mxArray* shape, co
     return true;
 }
 
-ConstraintMode parseConstraintMode(const mxArray* payload) {
+void parseInterXPayload(const mxArray* payload, mxArray*& vehicle_obstacles, mxArray*& hdv_obstacles, mxArray*& lanelet_boundary) {
     if (!mxIsStruct(payload)) {
-        return ConstraintMode::Callback;
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Constraint payload must be a struct.");
     }
 
-    const mxArray* mode_field = mxGetField(payload, 0, "mode");
-
-    if (mode_field == nullptr) {
-        return ConstraintMode::Callback;
-    }
-
-    const std::string mode = getString(mode_field, "constraint_payload.mode");
-
-    if (mode == "interx") {
-        return ConstraintMode::InterX;
-    }
-
-    return ConstraintMode::Callback;
-}
-
-InterXPayload parseInterXPayload(const mxArray* payload) {
-    if (!mxIsStruct(payload)) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "InterX mode requires a struct payload.");
-    }
-
-    const mxArray* vehicle_obstacles = mxGetField(payload, 0, "vehicle_obstacles");
-    const mxArray* hdv_obstacles = mxGetField(payload, 0, "hdv_obstacles");
-    const mxArray* lanelet_boundary = mxGetField(payload, 0, "lanelet_boundary");
+    vehicle_obstacles = mxGetField(payload, 0, "vehicle_obstacles");
+    hdv_obstacles = mxGetField(payload, 0, "hdv_obstacles");
+    lanelet_boundary = mxGetField(payload, 0, "lanelet_boundary");
 
     if (vehicle_obstacles == nullptr || hdv_obstacles == nullptr || lanelet_boundary == nullptr) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "InterX payload missing required fields.");
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Payload missing required fields: vehicle_obstacles, hdv_obstacles, lanelet_boundary.");
     }
-
-    return InterXPayload{vehicle_obstacles, hdv_obstacles, lanelet_boundary};
 }
 
 double squaredDistanceToReference(const double node_pose[3], const double* reference_points, mwIndex i_step) {
@@ -486,8 +441,8 @@ void writeScalarField(mxArray* structure, mwIndex index, const char* field_name,
 } // namespace
 
 void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
-    if (nrhs != 14) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Expected 14 inputs.");
+    if (nrhs != 13) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Expected 13 inputs.");
     }
 
     if (nlhs > 1) {
@@ -535,15 +490,18 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     const double* random_numbers = mxGetPr(prhs[4]);
     const mxArray* all_successor_trims = prhs[5];
     const mxArray* maneuvers = prhs[6];
-    const mxArray* constraint_checker = prhs[12];
-    const mxArray* constraint_payload = prhs[13];
+    const mxArray* constraint_payload = prhs[12];
 
-    const ConstraintMode constraint_mode = parseConstraintMode(constraint_payload);
-    std::unique_ptr<InterXPayload> interx_payload;
+    mxArray* vehicle_obstacles_field = nullptr;
+    mxArray* hdv_obstacles_field = nullptr;
+    mxArray* lanelet_boundary_field = nullptr;
+    parseInterXPayload(constraint_payload, vehicle_obstacles_field, hdv_obstacles_field, lanelet_boundary_field);
 
-    if (constraint_mode == ConstraintMode::InterX) {
-        interx_payload = std::make_unique<InterXPayload>(parseInterXPayload(constraint_payload));
-    }
+    const InterXPayload interx_payload{
+        vehicle_obstacles_field,
+        hdv_obstacles_field,
+        lanelet_boundary_field
+    };
 
     unsigned char* trims = getUint8Data(trims_out, "trims");
     std::uint32_t* parents = getUint32Data(parents_out, "parents");
@@ -675,11 +633,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
                 shape_for_boundary_check_matrix = translatePolygon(area_large_offset_array, c, s, start_x, start_y);
             }
 
-            if (constraint_mode == ConstraintMode::InterX) {
-                is_valid = callInterXConstraint(*interx_payload, shape_matrix, shape_for_boundary_check_matrix, i_step);
-            } else {
-                is_valid = callConstraintChecker(constraint_checker, shape_matrix, shape_for_boundary_check_matrix, i_step);
-            }
+            is_valid = callInterXConstraint(interx_payload, shape_matrix, shape_for_boundary_check_matrix, i_step);
 
             if (!is_valid) {
                 children[child_row + (node_parent - 1) * n_successor_trims_max] = 0;

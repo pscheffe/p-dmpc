@@ -70,6 +70,8 @@ function verify_experiment_results_equal(testCase, matlab_result, cpp_result)
 
             testCase.verifyEqual(matlab_info.y_predicted, cpp_info.y_predicted);
             testCase.verifyEqual(matlab_info.predicted_trims, cpp_info.predicted_trims);
+            testCase.verifyEqual(matlab_info.n_expanded, cpp_info.n_expanded, ...
+                sprintf('n_expanded mismatch at step %d, vehicle %d', k, i_vehicle));
             testCase.verifyEqual(matlab_info.is_exhausted, cpp_info.is_exhausted);
             testCase.verifyEqual(matlab_info.needs_fallback, cpp_info.needs_fallback);
         end
