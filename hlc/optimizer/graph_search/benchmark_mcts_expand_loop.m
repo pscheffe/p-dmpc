@@ -62,21 +62,22 @@ function stats = benchmark_mcts_expand_loop(iterations, use_cpp_loop, constraint
 end
 
 function constraint_payload = createConstraintPayload(constraint_mode)
+
     switch lower(constraint_mode)
         case 'interx'
             far_polygon = [100 101 101 100 100; 100 100 101 101 100];
             vehicle_obstacles = {far_polygon, far_polygon};
             hdv_obstacles = {far_polygon, far_polygon};
             lanelet_boundary = [100 120; 100 120];
-            constraint_payload = struct( ...
-                'mode', 'interx', ...
-                'vehicle_obstacles', {vehicle_obstacles}, ...
-                'hdv_obstacles', {hdv_obstacles}, ...
-                'lanelet_boundary', lanelet_boundary ...
-            );
+            constraint_payload = struct();
+            constraint_payload.mode = 'interx';
+            constraint_payload.vehicle_obstacles = vehicle_obstacles;
+            constraint_payload.hdv_obstacles = hdv_obstacles;
+            constraint_payload.lanelet_boundary = lanelet_boundary;
         otherwise
             constraint_payload = struct('mode', 'callback');
     end
+
 end
 
 function [root_pose, reference_trajectory_points, random_numbers, all_successor_trims, maneuvers, trims, parents, children, shapes_tmp, n_nodes, constraint_checker] = createSyntheticLoopInputs()
