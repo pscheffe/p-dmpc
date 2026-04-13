@@ -121,13 +121,91 @@ std::vector<unsigned char> getUint8VectorFromCell(const mxArray* cell_array, mwI
         return {};
     }
 
-    if (!mxIsUint8(vector_array) || mxIsComplex(vector_array)) {
-        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "%s cell contents must be uint8.", name);
+    const mwSize n_elements = mxGetNumberOfElements(vector_array);
+
+    if (mxIsUint8(vector_array) && !mxIsComplex(vector_array)) {
+        const unsigned char* data = static_cast<const unsigned char*>(mxGetData(vector_array));
+        return std::vector<unsigned char>(data, data + n_elements);
     }
 
-    const mwSize n_elements = mxGetNumberOfElements(vector_array);
-    const unsigned char* data = static_cast<const unsigned char*>(mxGetData(vector_array));
-    return std::vector<unsigned char>(data, data + n_elements);
+    if (mxIsLogical(vector_array)) {
+        const mxLogical* data = mxGetLogicals(vector_array);
+        std::vector<unsigned char> result;
+        result.reserve(n_elements);
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(data[index] ? 1U : 0U);
+        }
+
+        return result;
+    }
+
+    if (!mxIsDouble(vector_array) && !mxIsSingle(vector_array) && !mxIsInt8(vector_array) && !mxIsUint8(vector_array) &&
+        !mxIsInt16(vector_array) && !mxIsUint16(vector_array) && !mxIsInt32(vector_array) && !mxIsUint32(vector_array) &&
+        !mxIsInt64(vector_array) && !mxIsUint64(vector_array)) {
+        mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "%s cell contents must be numeric or logical.", name);
+    }
+
+    std::vector<unsigned char> result;
+    result.reserve(n_elements);
+
+    if (mxIsDouble(vector_array)) {
+        const double* data = mxGetPr(vector_array);
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsSingle(vector_array)) {
+        const float* data = static_cast<const float*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsInt8(vector_array)) {
+        const std::int8_t* data = static_cast<const std::int8_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsUint16(vector_array)) {
+        const std::uint16_t* data = static_cast<const std::uint16_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsInt16(vector_array)) {
+        const std::int16_t* data = static_cast<const std::int16_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsUint32(vector_array)) {
+        const std::uint32_t* data = static_cast<const std::uint32_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsInt32(vector_array)) {
+        const std::int32_t* data = static_cast<const std::int32_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsUint64(vector_array)) {
+        const std::uint64_t* data = static_cast<const std::uint64_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    } else if (mxIsInt64(vector_array)) {
+        const std::int64_t* data = static_cast<const std::int64_t*>(mxGetData(vector_array));
+
+        for (mwSize index = 0; index < n_elements; ++index) {
+            result.push_back(static_cast<unsigned char>(data[index]));
+        }
+    }
+
+    return result;
 }
 
 const mxArray* getManeuverStruct(const mxArray* maneuvers, mwIndex start_trim, mwIndex goal_trim) {
@@ -219,6 +297,10 @@ bool isAllNan(const mxArray* matrix) {
 }
 
 std::vector<Segment> buildSegments(const mxArray* matrix) {
+    if (mxIsEmpty(matrix)) {
+        return {};
+    }
+
     if (!mxIsDouble(matrix) || mxIsComplex(matrix) || mxGetM(matrix) != 2) {
         mexErrMsgIdAndTxt("MonteCarloTreeSearch:InvalidInput", "Polyline matrices must be 2xN real double.");
     }

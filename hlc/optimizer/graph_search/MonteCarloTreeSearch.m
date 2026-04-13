@@ -14,7 +14,9 @@ classdef MonteCarloTreeSearch < OptimizerInterface
         function obj = MonteCarloTreeSearch()
             obj = obj@OptimizerInterface();
             obj.rand_stream = RandStream('mt19937ar', Seed = 42);
-            config_file = fullfile('config/mcts.json');
+            class_folder = fileparts(mfilename('fullpath'));
+            repo_root = fileparts(fileparts(fileparts(fileparts(class_folder))));
+            config_file = fullfile(repo_root, 'config', 'mcts.json');
             has_use_cpp_loop = false;
 
             if isfile(config_file)
@@ -88,12 +90,11 @@ classdef MonteCarloTreeSearch < OptimizerInterface
             maneuvers = mpa.maneuvers;
 
             if isequal(obj.are_constraints_satisfied, @are_constraints_satisfied_interx)
-                constraint_payload = struct( ...
-                    'mode', 'interx', ...
-                    'vehicle_obstacles', {vehicle_obstacles}, ...
-                    'hdv_obstacles', {hdv_obstacles}, ...
-                    'lanelet_boundary', lanelet_boundary ...
-                );
+                constraint_payload = struct();
+                constraint_payload.mode = 'interx';
+                constraint_payload.vehicle_obstacles = vehicle_obstacles;
+                constraint_payload.hdv_obstacles = hdv_obstacles;
+                constraint_payload.lanelet_boundary = lanelet_boundary;
                 constraint_checker = @(shape, shape_for_boundary_check, i_step) are_constraints_satisfied_interx_fast( ...
                     shape, ...
                     shape_for_boundary_check, ...
