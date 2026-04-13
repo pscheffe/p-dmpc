@@ -1,4 +1,4 @@
-function build_mcts_expand_loop_mex()
+function compile_mcts_expand_loop_mex()
     % BUILD_MCTS_EXPAND_LOOP_MEX  Compile the MCTS loop MEX.
     %
     % This compiles the MEX used by CppSampled optimizer.
