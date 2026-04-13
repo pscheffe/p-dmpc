@@ -29,6 +29,9 @@ classdef (Abstract) OptimizerInterface < handle
                 case OptimizerType.MatlabSampled
                     optimizer = MonteCarloTreeSearch();
                     OptimizerInterface.set_constraint_checker(optimizer, options);
+                case OptimizerType.CppSampled
+                    optimizer = CppSampled();
+                    OptimizerInterface.set_constraint_checker(optimizer, options);
             end
 
         end

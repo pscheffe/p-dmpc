@@ -329,6 +329,7 @@ function [list] = list_optimizer_prioritized
     list = {
             '1', 'MatlabOptimal';
             '2', 'MatlabSampled';
+            '3', 'CppSampled';
             };
 end
 
