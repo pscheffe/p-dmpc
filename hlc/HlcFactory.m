@@ -97,9 +97,12 @@ classdef HlcFactory
 
             fprintf("Dry run of HLC...\n");
 
+            options_dry_run = options;
+            options_dry_run.T_end = 1;
+
             % dry_run must be false otherwise it would lead to an endless loop
             % (get_hlc -> dry_run_hlc -> get_hlc)
-            hlc = HlcFactory.get_hlc(options, dry_run_vehicle_indices, do_dry_run = false);
+            hlc = HlcFactory.get_hlc(options_dry_run, dry_run_vehicle_indices, do_dry_run = false);
             hlc.set_clean_up_dry_run_function();
             hlc.run();
 
