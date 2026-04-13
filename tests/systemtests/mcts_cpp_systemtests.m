@@ -8,14 +8,13 @@ classdef mcts_cpp_systemtests < matlab.unittest.TestCase
             options = Config.load_from_file('tests/systemtests/Config_systemtests_prioritized.json');
             options.scenario_type = ScenarioType.commonroad;
             options.is_prioritized = true;
-            options.optimizer_type = OptimizerType.MatlabSampled;
             options.computation_mode = ComputationMode.sequential;
             options.amount = 3;
             options.path_ids = [18, 19, 20];
             options.validate();
 
-            matlab_result = run_experiment_with_mcts_backend(options, false);
-            cpp_result = run_experiment_with_mcts_backend(options, true);
+            matlab_result = run_experiment_with_optimizer(options, OptimizerType.MatlabSampled);
+            cpp_result = run_experiment_with_optimizer(options, OptimizerType.CppSampled);
 
             verify_experiment_results_equal(testCase, matlab_result, cpp_result);
         end
@@ -26,7 +25,6 @@ classdef mcts_cpp_systemtests < matlab.unittest.TestCase
             options = Config.load_from_file('tests/systemtests/Config_systemtests_prioritized.json');
             options.scenario_type = ScenarioType.commonroad;
             options.is_prioritized = true;
-            options.optimizer_type = OptimizerType.MatlabSampled;
             options.computation_mode = ComputationMode.sequential;
             options.amount = 3;
             options.path_ids = [18, 19, 20];
@@ -36,7 +34,7 @@ classdef mcts_cpp_systemtests < matlab.unittest.TestCase
             cleanup_warning = onCleanup(@() warning(warning_state));
             warning('error', 'MonteCarloTreeSearch:MexFallback');
 
-            cpp_result = run_experiment_with_mcts_backend(options, true);
+            cpp_result = run_experiment_with_optimizer(options, OptimizerType.CppSampled);
             testCase.verifyNotEmpty(cpp_result);
         end
 
@@ -53,46 +51,9 @@ function ensure_mcts_mex_is_available(testCase)
     testCase.verifyEqual(exist('mcts_expand_loop_mex', 'file'), 3);
 end
 
-function experiment_result = run_experiment_with_mcts_backend(options, use_cpp_loop)
-    config_path = fullfile(fileparts(fileparts(fileparts(fileparts(which('MonteCarloTreeSearch'))))), 'config', 'mcts.json');
-    previous_config = '';
-    had_previous_config = isfile(config_path);
-
-    if had_previous_config
-        previous_config = fileread(config_path);
-    end
-
-    cleanup_obj = onCleanup(@() restore_mcts_config(config_path, had_previous_config, previous_config));
-
-    mcts_config = struct('use_cpp_loop', use_cpp_loop);
-    write_mcts_config(config_path, mcts_config);
-
+function experiment_result = run_experiment_with_optimizer(options, optimizer_type)
+    options.optimizer_type = optimizer_type;
     experiment_result = main(options);
-
-    clear cleanup_obj;
-end
-
-function write_mcts_config(config_path, mcts_config)
-    fid = fopen(config_path, 'w');
-    assert(fid ~= -1, 'Could not open %s for writing.', config_path);
-    fprintf(fid, '%s', jsonencode(mcts_config, PrettyPrint = true));
-    fclose(fid);
-end
-
-function restore_mcts_config(config_path, had_previous_config, previous_config)
-
-    if had_previous_config
-        fid = fopen(config_path, 'w');
-
-        if fid ~= -1
-            fprintf(fid, '%s', previous_config);
-            fclose(fid);
-        end
-
-    elseif isfile(config_path)
-        delete(config_path);
-    end
-
 end
 
 function verify_experiment_results_equal(testCase, matlab_result, cpp_result)

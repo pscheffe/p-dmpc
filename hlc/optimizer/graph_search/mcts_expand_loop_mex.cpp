@@ -682,7 +682,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
             }
 
             if (!is_valid) {
-                children[child_row + node_parent * n_successor_trims_max] = 0;
+                children[child_row + (node_parent - 1) * n_successor_trims_max] = 0;
                 mxDestroyArray(shape_matrix);
                 mxDestroyArray(shape_without_offset_matrix);
 

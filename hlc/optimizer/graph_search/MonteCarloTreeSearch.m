@@ -6,7 +6,6 @@ classdef MonteCarloTreeSearch < OptimizerInterface
         random_numbers (1, :) double = [];
         rand_stream (1, 1) RandStream = RandStream('mt19937ar', Seed = 42);
         n_expansions_max (1, 1) double = 250;
-        use_cpp_loop (1, 1) logical = false;
     end
 
     methods
@@ -14,10 +13,7 @@ classdef MonteCarloTreeSearch < OptimizerInterface
         function obj = MonteCarloTreeSearch()
             obj = obj@OptimizerInterface();
             obj.rand_stream = RandStream('mt19937ar', Seed = 42);
-            class_folder = fileparts(mfilename('fullpath'));
-            repo_root = fileparts(fileparts(fileparts(fileparts(class_folder))));
-            config_file = fullfile(repo_root, 'config', 'mcts.json');
-            has_use_cpp_loop = false;
+            config_file = fullfile('config/mcts.json');
 
             if isfile(config_file)
                 mcts_config = jsondecode(fileread(config_file));
@@ -27,12 +23,6 @@ classdef MonteCarloTreeSearch < OptimizerInterface
                     obj.(field_name) = mcts_config.(field_name);
                 end
 
-                has_use_cpp_loop = isfield(mcts_config, 'use_cpp_loop');
-
-            end
-
-            if ~has_use_cpp_loop && exist('mcts_expand_loop_mex', 'file') == 3
-                obj.use_cpp_loop = true;
             end
 
         end
@@ -69,10 +59,9 @@ classdef MonteCarloTreeSearch < OptimizerInterface
             % Create tree with root node
             trim = iter.trim_indices;
             root_successor_trims = all_successor_trims{trim, 1};
-            max_nodes = obj.n_expansions_max + 1;
-            trims = zeros(1, max_nodes, 'uint8');
-            parents = zeros(1, max_nodes, 'uint32');
-            children = zeros(n_successor_trims_max, max_nodes, 'uint32');
+            trims = zeros(1, obj.n_expansions_max, 'uint8');
+            parents = zeros(1, obj.n_expansions_max, 'uint32');
+            children = zeros(n_successor_trims_max, obj.n_expansions_max, 'uint32');
 
             root_pose = iter.x0(1:3)';
             trims(1) = trim;
@@ -80,67 +69,132 @@ classdef MonteCarloTreeSearch < OptimizerInterface
             children(1:size(root_successor_trims, 2), 1) = 1;
             n_nodes = 1;
 
-            shapes_tmp = cell(iter.amount, max_nodes);
+            valid_nodes_at_hp = PriorityQueue();
+            shapes_tmp = cell(iter.amount, 0);
 
             [vehicle_obstacles, hdv_obstacles, lanelet_boundary] ...
                 = obj.set_up_constraints(iter, Hp);
 
             iVeh = 1;
+            n_expansions = 0;
+            n_traversals = 0;
+            is_finished = false;
+
             reference_trajectory_points = squeeze(iter.reference_trajectory_points(iVeh, :, 1:2))';
             maneuvers = mpa.maneuvers;
 
-            if isequal(obj.are_constraints_satisfied, @are_constraints_satisfied_interx)
-                constraint_payload = struct();
-                constraint_payload.mode = 'interx';
-                constraint_payload.vehicle_obstacles = vehicle_obstacles;
-                constraint_payload.hdv_obstacles = hdv_obstacles;
-                constraint_payload.lanelet_boundary = lanelet_boundary;
-                constraint_checker = @(shape, shape_for_boundary_check, i_step) are_constraints_satisfied_interx_fast( ...
-                    shape, ...
-                    shape_for_boundary_check, ...
-                    i_step, ...
-                    vehicle_obstacles, ...
-                    lanelet_boundary, ...
-                    hdv_obstacles ...
-                );
-            else
-                constraint_payload = struct('mode', 'callback');
-                constraint_checker = @(shape, shape_for_boundary_check, i_step) obj.are_constraints_satisfied( ...
-                    iter, ...
-                    iVeh, ...
-                    {shape}, ...
-                    {shape_for_boundary_check}, ...
-                    i_step, ...
-                    vehicle_obstacles, ...
-                    lanelet_boundary, ...
-                    hdv_obstacles ...
-                );
+            while (n_expansions < obj.n_expansions_max) && ~is_finished
+                % expand randomly for Hp steps
+                node_id = 1;
+                solution_cost = 0;
+                node_pose = root_pose;
+
+                for i_step = 1:Hp
+                    is_valid = false;
+                    n_traversals = n_traversals + 1;
+
+                    % Select node to expand randomly
+                    trim_positions = find(children(:, node_id));
+                    n_trims = numel(trim_positions);
+
+                    if n_trims ~= 0
+                        % choose successor trim randomly
+                        child_position = trim_positions(ceil(obj.random_numbers(n_traversals) * n_trims));
+                    else
+
+                        if node_id ~= 1
+                            % remove edge to node without children
+                            parent_id = parents(node_id);
+                            children(children(:, parent_id) == node_id, parent_id) = 0;
+                            break
+                        else
+                            is_finished = true;
+                            break
+                        end
+
+                    end
+
+                    % Expand node
+                    parent_trim = trims(node_id);
+                    successor_trims = all_successor_trims{parent_trim, i_step};
+                    goal_trim = successor_trims(child_position);
+
+                    maneuver = maneuvers{parent_trim, goal_trim};
+
+                    c = cos(node_pose(3));
+                    s = sin(node_pose(3));
+
+                    transform = [c, -s, 0;
+                                 s, c, 0;
+                                 0, 0, 1];
+
+                    start_pose = node_pose;
+                    node_pose = node_pose + transform * maneuver.dpose;
+
+                    % Cost to come
+                    % Distance to reference trajectory points squared to conform with
+                    % J = (x-x_ref)' Q (x-x_ref)
+                    solution_cost = solution_cost + norm(node_pose(1:2) - reference_trajectory_points(:, i_step))^2;
+
+                    is_expanded = children(child_position, node_id) ~= 1;
+
+                    if is_expanded
+                        node_id = children(child_position, node_id);
+                        continue
+                    end
+
+                    n_expansions = n_expansions + 1;
+
+                    node_parent = node_id;
+
+                    shapes_without_offset = {transform(1:2, 1:2) * maneuver.area_without_offset + start_pose(1:2)};
+                    shapes = {transform(1:2, 1:2) * maneuver.area + start_pose(1:2)};
+
+                    if (i_step ~= Hp)
+                        shapes_for_boundary_check = shapes_without_offset;
+                        child_successor_trims = all_successor_trims{goal_trim, i_step + 1};
+                    else
+                        shapes_for_boundary_check = {transform(1:2, 1:2) * maneuver.area_large_offset + start_pose(1:2)};
+                        child_successor_trims = [];
+                    end
+
+                    is_valid = obj.are_constraints_satisfied( ...
+                        iter, ...
+                        iVeh, ...
+                        shapes, ...
+                        shapes_for_boundary_check, ...
+                        i_step, ...
+                        vehicle_obstacles, ...
+                        lanelet_boundary, ...
+                        hdv_obstacles ...
+                    );
+
+                    if ~is_valid
+                        % remove edge
+                        children(child_position, node_parent) = 0;
+                        break
+                    else
+                        % add node
+                        n_nodes = n_nodes + 1;
+                        parents(1, n_nodes) = node_parent;
+                        trims(:, n_nodes) = goal_trim;
+                        children(1:size(child_successor_trims, 2), n_nodes) = 1;
+                        children(child_position, node_parent) = n_nodes;
+                        shapes_tmp(:, n_nodes) = shapes;
+                        node_id = n_nodes;
+                    end
+
+                end
+
+                if is_valid
+                    valid_nodes_at_hp.push(double(node_id), double(solution_cost));
+                    % Avoid double exploration
+                    children(child_position, node_parent) = 0;
+                end
+
             end
 
-            loop_result = mcts_expand_loop_gateway( ...
-                obj.use_cpp_loop, ...
-                obj.n_expansions_max, ...
-                Hp, ...
-                root_pose, ...
-                reference_trajectory_points, ...
-                obj.random_numbers, ...
-                all_successor_trims, ...
-                maneuvers, ...
-                trims, ...
-                parents, ...
-                children, ...
-                shapes_tmp, ...
-                n_nodes, ...
-                constraint_checker, ...
-                constraint_payload ...
-            );
-
-            trims = loop_result.trims;
-            parents = loop_result.parents;
-            n_nodes = loop_result.n_nodes;
-            n_expansions = loop_result.n_expansions;
-            best_node_id = loop_result.best_node_id;
-            cost = loop_result.best_cost;
+            [best_node_id, cost] = valid_nodes_at_hp.pop();
 
             info.n_expanded = n_expansions;
 
@@ -186,7 +240,7 @@ classdef MonteCarloTreeSearch < OptimizerInterface
 
             % return cheapest path
             info.y_predicted = return_path_to(best_node_id, tree);
-            info.shapes = return_path_area(loop_result.shapes_tmp, tree, best_node_id);
+            info.shapes = return_path_area(shapes_tmp, tree, best_node_id);
             info.tree_path = final_nodes;
             % Predicted trims in the future Hp time steps. The first entry is the current trims
             info.predicted_trims = squeeze(double([tree.trim(1, info.tree_path(2:end))]));
