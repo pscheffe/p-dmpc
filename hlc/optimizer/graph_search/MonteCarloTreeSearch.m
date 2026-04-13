@@ -5,7 +5,7 @@ classdef MonteCarloTreeSearch < OptimizerInterface
         are_constraints_satisfied (1, 1) function_handle = @()[];
         random_numbers (1, :) double = [];
         rand_stream (1, 1) RandStream = RandStream('mt19937ar', Seed = 42);
-        n_expansions_max (1, 1) double = 250;
+        n_expansions_max (1, 1) double = 8000;
     end
 
     methods
