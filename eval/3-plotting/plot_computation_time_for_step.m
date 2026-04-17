@@ -15,7 +15,8 @@ function plot_computation_time_for_step(experiment_result, k, optional)
 
     % Configure, which field names in the timing object are relevant, dependent on the used controller
     if ~(options.is_prioritized && options.computation_mode ~= ComputationMode.sequential)
-        error('The graph is currently only supported for results of prioritized, distributed execution.');
+        warning('The graph is currently only supported for results of prioritized, distributed execution, aborting plot...');
+        return;
     end
 
     % find computation order for sorted plotting

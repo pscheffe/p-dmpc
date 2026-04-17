@@ -207,6 +207,14 @@ classdef PrioritizedSequentialController < HighLevelController
 
         end
 
+        function clear_old_messages_from_communications(obj)
+
+            for hlc = obj.hlcs
+                hlc.clear_old_messages_from_communications();
+            end
+
+        end
+
     end
 
 end

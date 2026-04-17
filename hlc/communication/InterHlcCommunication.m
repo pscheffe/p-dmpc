@@ -36,8 +36,7 @@ classdef (Abstract) InterHlcCommunication < handle
             % (faster than creating every time step)
             obj.message_to_be_sent = ros2message(message_type);
             qos_config = struct( ...
-                History = "keeplast", ...
-                Depth = 40, ...
+                History = "keepall", ...
                 Durability = "transientlocal" ...
             );
 
@@ -106,10 +105,6 @@ classdef (Abstract) InterHlcCommunication < handle
             % if the callback is triggered by the own message, it does not add
             % the message to the queue
 
-            % the queue contains only messages
-            % that are not older than two time steps
-            % this limits the queue length to 2 * (n_vehicle-1)
-
             if int32(obj.vehicle_index) == message_received.vehicle_index
                 % if triggered by own message, do nothing
                 return
@@ -128,12 +123,19 @@ classdef (Abstract) InterHlcCommunication < handle
                 obj.messages_stored(end + 1) = message_received;
             end
 
+        end
+
+        function clear_old_messages(obj, current_time_step)
             % delete messages older than a certain time steps compared to
-            % the time step of newly received message
-            message_age_maximum = 2;
+            % the given time step
+            if isempty(obj.messages_stored)
+                return
+            end
+
+            message_age_maximum = 1;
             is_msg_expired = ...
                 [obj.messages_stored.time_step] <= ...
-                (message_received.time_step - message_age_maximum);
+                (current_time_step - message_age_maximum);
             obj.messages_stored(is_msg_expired) = [];
         end
 
@@ -150,7 +152,7 @@ classdef (Abstract) InterHlcCommunication < handle
                 vehicle_index_subscribed (1, 1) double
                 time_step (1, 1) double
                 optional.throw_error (1, 1) logical = true
-                optional.timeout_seconds (1, 1) double = 100.0
+                optional.timeout_seconds (1, 1) double = 5.0
                 optional.priority_permutation (1, 1) double = 0
             end
 
