@@ -39,7 +39,6 @@ function [trim_inputs, trim_adjacency] = choose_trims(mpa_type, max_acceleration
             steering_max = 0.6; %0.4135; % rad
             steering = linspace(-steering_max, steering_max, 2 * n_sixth + 1);
 
-            v_step = 0.1;
             v_max_1 = 0.5; % m/s
             v_max_2 = 0.7; % m/s
             v_max_3 = 0.9; % m/s

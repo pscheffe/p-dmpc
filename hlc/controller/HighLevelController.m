@@ -38,6 +38,7 @@ classdef (Abstract) HighLevelController < handle
     methods (Abstract = true, Access = protected)
         controller(obj);
         controller_fallback(obj);
+        clear_old_messages_from_communications(obj);
     end
 
     methods
@@ -363,6 +364,9 @@ classdef (Abstract) HighLevelController < handle
                 obj.store_control_info();
                 obj.store_iteration_results();
                 obj.reset_control_loop_data();
+
+                % clear old message data
+                obj.clear_old_messages_from_communications();
 
                 % Apply control action
                 % -------------------------------------------------------------------------

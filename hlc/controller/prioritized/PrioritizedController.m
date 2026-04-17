@@ -739,6 +739,12 @@ classdef PrioritizedController < HighLevelController
             free_objects@HighLevelController(obj);
         end
 
+        function clear_old_messages_from_communications(obj)
+            obj.traffic_communication.clear_old_messages(obj.k);
+            obj.predictions_communication.clear_old_messages(obj.k);
+            obj.solution_cost_communication.clear_old_messages(obj.k);
+        end
+
     end
 
 end
