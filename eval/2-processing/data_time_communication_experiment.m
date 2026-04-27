@@ -80,7 +80,7 @@ function T_communication = data_time_communication_experiment(experiment_result)
                     + optimize_duration(predecessors, i_step, i_perm);
                 t_max_predecessors = max(t_end_optimization);
 
-                if n_permutations == 1;
+                if n_permutations == 1
                     t_end_optimization_self = 0;
                 else
                     % From previous permutation
