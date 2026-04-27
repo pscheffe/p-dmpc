@@ -163,7 +163,6 @@ function eval_prioritization(optional)
                 computation_time_function = @data_time_prioritize_optimize_experiment ...
             );
 
-            % Remove optimal priority, scale to ms
             series_time_max_ms = time_max_approach_vehicle' .* 1000;
             series_time_med_ms = time_med_approach_vehicle' .* 1000;
 

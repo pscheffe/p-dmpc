@@ -49,6 +49,8 @@ classdef SolutionCostCommunication < InterHlcCommunication
             obj.message_to_be_sent.solution_cost = double(solution_cost);
 
             send(obj.ros2_publisher, obj.message_to_be_sent);
+            % pause_duration = length(solution_cost) * 5 * 1e-3;
+            % pause(pause_duration) % pause to ensure message is sent
         end
 
     end
