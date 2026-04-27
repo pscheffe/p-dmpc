@@ -7,16 +7,23 @@ function plot_computation_time_for_step(experiment_result, k, optional)
         experiment_result (1, 1) ExperimentResult;
         k uint64;
         optional.fig (1, 1) matlab.ui.Figure = gcf;
+        % if true: only plot optimization time;
+        % assume vehicles start with computation ASAP according to coupling graph
+        optional.is_idealized (1, 1) logical = false;
     end
 
     hold_before = ishold;
+    colororder(rwth_color_order());
 
     options = experiment_result.options;
 
     % Configure, which field names in the timing object are relevant, dependent on the used controller
-    if ~(options.is_prioritized && options.computation_mode ~= ComputationMode.sequential)
-        warning('The graph is currently only supported for results of prioritized, distributed execution, aborting plot...');
+    if ~options.is_prioritized
+        warning('The graph is currently only supported for results of prioritized execution, aborting plot...');
         return;
+    elseif (options.computation_mode == ComputationMode.sequential) && (~optional.is_idealized)
+        warning('Only idealized computation time plot is supported for sequential computation, changing option...');
+        optional.is_idealized = true;
     end
 
     % find computation order for sorted plotting
@@ -25,7 +32,7 @@ function plot_computation_time_for_step(experiment_result, k, optional)
 
     all_field_names = fieldnames(experiment_result.timing(1));
     optimize_field_names_indices = ~cellfun(@isempty, regexp(all_field_names, '^optimize\w+'));
-    optimize_field_names = string(all_field_names(optimize_field_names_indices))';
+    optimize_field_names = strcat("optimize", string(0:nnz(optimize_field_names_indices) - 1)');
 
     % n_vehicles x n_steps x n_permutations
     optimize_start = zeros([n_vehicles, 1, numel(optimize_field_names)]); % 3d because of similarity from add_optimize_time
@@ -75,21 +82,25 @@ function plot_computation_time_for_step(experiment_result, k, optional)
 
     end
 
-    field_names = [ ...
-                       "measure", ...
-                       "analyze_reachability", ...
-                       "receive_from_others", ...
-                       "couple", ...
-                       "prioritize", ...
-                       "group", ...
-                       optimize_field_names, ...
-                       "receive_fallback", ...
-                   ];
+    optimize_start_idealized = zeros(size(optimize_start));
 
-    % Find time of HLC which starts loop last
-    measure_timings = vertcat(experiment_result.timing.measure);
-    measure_start_points = measure_timings(1:2:end, :);
-    t0 = max(measure_start_points(:, k));
+    if optional.is_idealized
+        field_names = optimize_field_names;
+        get_t_start_handle = @get_t_start_idealized;
+        [~, optimize_start_idealized] = add_optimize_time(experiment_result, zeros(experiment_result.n_hlc, experiment_result.n_steps));
+    else
+        field_names = [ ...
+                           "measure", ...
+                           "analyze_reachability", ...
+                           "receive_from_others", ...
+                           "couple", ...
+                           "prioritize", ...
+                           "group", ...
+                           optimize_field_names, ...
+                           "receive_fallback", ...
+                       ];
+        get_t_start_handle = @get_t_start;
+    end
 
     groups = conncomp(digraph(directed_coupling_sequential(:, :, 1)), Type = 'weak');
 
@@ -110,7 +121,15 @@ function plot_computation_time_for_step(experiment_result, k, optional)
         vehicle_list = 1:options.amount;
         vehicle_ids_in_group = vehicle_list(groups == i_group);
 
+        [~, id_order] = sort(levels_per_vehicle(vehicle_ids_in_group, 1));
+
         nexttile([numel(vehicle_ids_in_group) n_permutations]);
+
+        yticks(1:numel(vehicle_ids_in_group));
+        yticklabels(vehicle_ids_in_group(id_order))
+
+        ylim([1 - 0.5, numel(vehicle_ids_in_group) + 0.5]);
+        hold on;
 
         for field_i = 1:length(field_names)
             field_name = field_names(field_i);
@@ -118,13 +137,11 @@ function plot_computation_time_for_step(experiment_result, k, optional)
 
             for i_vehicle = 1:numel(vehicle_ids_in_group)
 
-                veh_i = vehicle_ids_in_group(i_vehicle);
-                timings = experiment_result.timing(veh_i);
+                veh_id = vehicle_ids_in_group(i_vehicle);
+                timings = experiment_result.timing(veh_id);
 
-                t_start = timings.(field_name)(1, k) - t0; % Normalize (see above)
+                t_start = get_t_start_handle(veh_id, i_step, field_name, experiment_result, optimize_start_idealized);
                 duration = timings.(field_name)(2, k);
-
-                [~, id_order] = sort(levels_per_vehicle(vehicle_ids_in_group, 1));
 
                 time_to_draw(:, id_order == i_vehicle) = ...
                     [t_start, t_start + duration] * 10^3; % Scale to ms
@@ -132,24 +149,22 @@ function plot_computation_time_for_step(experiment_result, k, optional)
 
             plot(time_to_draw, [1:numel(vehicle_ids_in_group); 1:numel(vehicle_ids_in_group)], 'SeriesIndex', field_i, ...
                 LineWidth = 5, Tag = 'box_as_line');
-
-            hold on;
+        
+            maximum_time = max([time_to_draw(2, :), maximum_time]);
 
         end
-
-        maximum_time = max([time_to_draw(2, :), maximum_time]);
-
-        yticks(1:numel(vehicle_ids_in_group));
-        yticklabels(vehicle_ids_in_group(id_order))
-
-        ylim([1 - 0.5, numel(vehicle_ids_in_group) + 0.5]);
 
         color_order = rwth_color_order();
 
         for i_permutation = 1:n_permutations
 
             n_colors = size(color_order, 1);
-            i_color = mod(6 + i_permutation - 1, n_colors) + 1;
+
+            if optional.is_idealized
+                i_color = mod(i_permutation - 1, n_colors) + 1;
+            else
+                i_color = mod(6 + i_permutation - 1, n_colors) + 1;
+            end
 
             nexttile([numel(vehicle_ids_in_group) 1]);
             sg = plot( ...
@@ -197,4 +212,18 @@ function plot_computation_time_for_step(experiment_result, k, optional)
         hold off;
     end
 
+end
+
+function t_start = get_t_start_idealized(veh_i, i_step, field_name, ~, optimize_start_idealized)
+    i_permutation = str2double(regexp(char(field_name), '\d+', 'match', 'once')) + 1;
+    t_start = optimize_start_idealized(veh_i, i_step, i_permutation);
+end
+
+function t_start = get_t_start(veh_i, ~, field_name, experiment_result, ~)
+    % Find time of HLC which starts loop last
+    measure_timings = vertcat(experiment_result.timing.measure);
+    measure_start_points = measure_timings(1:2:end, :);
+    t0 = max(measure_start_points(:, k));
+    timings = experiment_result.timing(veh_i);
+    t_start = timings.(field_name)(1, k) - t0; % Normalize (see above)
 end
