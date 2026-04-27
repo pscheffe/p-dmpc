@@ -20,7 +20,6 @@ function T_communication = data_time_communication_experiment(experiment_result)
 
     all_field_names = fieldnames(experiment_result.timing(1));
     optimize_field_names_indices = ~cellfun(@isempty, regexp(all_field_names, '^optimize\w+'));
-    % FIXME check if ordering can be problematic elsewhere
     optimize_field_names = strcat("optimize", string(0:nnz(optimize_field_names_indices) - 1)');
 
     % n_vehicles x n_steps x n_permutations

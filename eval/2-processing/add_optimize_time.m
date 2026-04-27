@@ -1,4 +1,4 @@
-function computation_time = add_optimize_time(experiment_result, computation_time)
+function [computation_time, optimize_start_idealized] = add_optimize_time(experiment_result, computation_time)
 
     arguments (Input)
         experiment_result (1, 1) ExperimentResult
@@ -8,6 +8,9 @@ function computation_time = add_optimize_time(experiment_result, computation_tim
     arguments (Output)
         % n_vehicles x n_steps
         computation_time (:, :) double
+        % optimize start time based on coupling graph; starts at 0 for each time step;
+        % n_vehicles x n_steps x n_permutations
+        optimize_start_idealized (:, :, :) double
     end
 
     % Skip computation for optimal priorities
@@ -21,10 +24,11 @@ function computation_time = add_optimize_time(experiment_result, computation_tim
 
     all_field_names = fieldnames(experiment_result.timing(1));
     optimize_field_names_indices = ~cellfun(@isempty, regexp(all_field_names, '^optimize\w+'));
-    optimize_field_names = string(all_field_names(optimize_field_names_indices))';
+    optimize_field_names = strcat("optimize", string(0:nnz(optimize_field_names_indices) - 1)');
 
     % n_vehicles x n_steps x n_permutations
     optimize_start = zeros([size(computation_time), numel(optimize_field_names)]);
+    optimize_start_idealized = zeros(size(optimize_start));
     optimize_duration = zeros(size(optimize_start));
 
     for i_field = 1:numel(optimize_field_names)
@@ -68,7 +72,7 @@ function computation_time = add_optimize_time(experiment_result, computation_tim
                     priorities ...
                 );
 
-                levels_per_vehicle(:, i_perm) = level_matrix* (1:size(latin_square, 2))';
+                levels_per_vehicle(:, i_perm) = level_matrix * (1:size(latin_square, 2))';
             end
 
         end
@@ -80,17 +84,20 @@ function computation_time = add_optimize_time(experiment_result, computation_tim
             % Loop over permutations
             for i_perm = 1:n_permutations
 
-                vehicles_on_level = find(levels_per_vehicle(:, i_perm) == i_level);
+                vehicles_on_level_mask = levels_per_vehicle(:, i_perm) == i_level;
+                vehicles_on_level = find(vehicles_on_level_mask);
                 vehicles_on_level = reshape(vehicles_on_level, 1, []);
-                processed_vehicles = or(processed_vehicles, levels_per_vehicle(:, i_perm) == i_level);
+                processed_vehicles = or(processed_vehicles, vehicles_on_level_mask);
 
                 for i_vehicle = vehicles_on_level
                     predecessors = directed_coupling_sequential(:, i_vehicle, i_perm);
-                    computation_time_from_level(i_vehicle) = ...
+                    optimize_start_idealized(i_vehicle, i_step, i_perm) = ...
                         max([ ...
                              computation_time(i_vehicle, i_step), ...
-                             computation_time(predecessors, i_step)' ...
-                         ]) + optimize_duration(i_vehicle, i_step, i_perm);
+                             optimize_start_idealized(predecessors, i_step, i_perm)' + optimize_duration(predecessors, i_step, i_perm)' ...
+                         ]);
+                    computation_time_from_level(i_vehicle) = ...
+                        optimize_start_idealized(i_vehicle, i_step, i_perm) + optimize_duration(i_vehicle, i_step, i_perm);
                 end
 
             end
