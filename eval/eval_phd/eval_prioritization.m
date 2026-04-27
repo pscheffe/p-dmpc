@@ -174,7 +174,7 @@ function eval_prioritization(optional)
                 priority_names, ...
                 export_fig_config = ExportFigConfig.paper(paperheight = 6) ...
             );
-            ylim([0, 300]);
+            ylim([0, 200]);
 
             txt_med_max = {
                            sprintf("med: % 5.0f", round(series_time_med_ms(2, end)))
