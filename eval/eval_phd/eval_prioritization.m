@@ -83,7 +83,10 @@ function eval_prioritization(optional)
             %  _\ \/ // / __/ __/ -_|_-<(_-<
             % /___/\_,_/\__/\__/\__/___/___/
 
-            [success_rate, is_deadlocked] = data_success_rate(experiment_results);
+            [success_rate, is_deadlocked] = data_success_rate( ...
+                experiment_results, ...
+                cache_folder = base_folder_prioritization ...
+            );
 
             % data export
             n_vehicles = [experiment_results(:, 1, 1).n_hlc]';
