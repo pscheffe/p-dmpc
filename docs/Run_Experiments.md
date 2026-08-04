@@ -2,7 +2,7 @@
 * execute `main()` and choose "Simulation" as environment
 
 # CPM Lab
-* See also [CPM documentation](https://cpm.embedded.rwth-aachen.de/doc/)
+* See also [CPM documentation](https://cpm.lrt.unibw.de/doc/)
 * MATLAB
     * Build a `Config` object (e.g., `config`) with `config.environment = Environment.CpmLab`
     * Run `main(config, vehicle_ids = [<<active vehicle ids>>])`

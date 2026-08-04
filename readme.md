@@ -1,6 +1,6 @@
 # Prioritized Motion Planning for Connected Vehicles
 
-[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=embedded-software-laboratory/p-dmpc&project=graph_based_planning.prj&file=main.m)
+[![Open in MATLAB Online](https://www.mathworks.com/images/responsive/global/open-in-matlab-online.svg)](https://matlab.mathworks.com/open/github/v1?repo=pscheffe/p-dmpc&project=graph_based_planning.prj&file=main.m)
 
 - [Prioritized Motion Planning for Connected Vehicles](#prioritized-motion-planning-for-connected-vehicles)
   - [Demonstration](#demonstration)
@@ -81,19 +81,17 @@ Thank you very much!
 
 <details>
 <summary>
-P. Scheffe, "Prioritized Motion Planning for Connected Vehicles", RWTH Aachen University, Department of Computer Science, 2025. doi: 10.18154/RWTH-2025-07834.
-
+P. Scheffe, "Prioritized Motion Planning for Connected Vehicles", RWTH Aachen University, Department of Computer Science, 2025. doi: <a href="https://doi.org/10.18154/RWTH-2025-07834">10.18154/RWTH-2025-07834</a>.
 <br>
 
 [![Paper](https://img.shields.io/badge/-Dissertation-00629B)](https://doi.org/10.18154/RWTH-2025-07834)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v8.0)
-
-<!-- [![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://youtu.be/alGHLwQQpHI) -->
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v8.0)
+[![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://youtu.be/vEM2e3QxdQ0)
 
 </summary>
 <p>
 
-Checkout the [the software version 8.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v8.0).
+Checkout the [the software version 8.0](https://github.com/pscheffe/p-dmpc/tree/v8.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -101,7 +99,7 @@ open graph_based_planning.prj
 eval_phd()
 ```
 
-The simulation results are produced in the [CPM Lab](cpm.embedded.rwth-aachen.de) on 20 Intel NUCs. The results can partly be reproduced on a single computer by changing `computation_mode = ComputationMode.parallel_physically` to `computation_mode = ComputationMode.parallel_threads`.
+The simulation results are produced in the [CPM Lab](https://cpm.lrt.unibw.de/) on 20 Intel NUCs. The results can partly be reproduced on a single computer by changing `computation_mode = ComputationMode.parallel_physically` to `computation_mode = ComputationMode.parallel_threads`.
 The results are saved in the folder "results".
 
 </p>
@@ -109,17 +107,18 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe, J. Kahle and B. Alrifaee, "Simultaneous Computation of Multiple Prioritizations in Distributed MPC", arXiv preprint arXiv:2501.10781.
+P. Scheffe, J. Kahle and B. Alrifaee, "Simultaneous Computation with Multiple Prioritizations in Multi-Agent Motion Planning", accepted for publication in the Journal of Artificial Intelligence Research (JAIR).
+Preprint: <a href="https://doi.org/10.48550/arXiv.2501.10781">arXiv:2501.10781</a>.
 <br>
 
 [![Paper](https://img.shields.io/badge/Preprint-Paper-00629B)](https://arxiv.org/abs/2501.10781)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v7.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v7.1)
 [![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://youtu.be/Mb59zQ3j3s0)
 
 </summary>
 <p>
 
-Checkout the [the software version 7.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v7.0).
+Checkout the [the software version 7.1](https://github.com/pscheffe/p-dmpc/tree/v7.1).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -127,7 +126,7 @@ open graph_based_planning.prj
 eval_exploration()
 ```
 
-The simulation results are produced in the [CPM Lab](cpm.embedded.rwth-aachen.de) on 20 Intel NUCs. The results can partly be reproduced on a single computer by changing `computation_mode = ComputationMode.parallel_physically` to `computation_mode = ComputationMode.parallel_threads`.
+The simulation results are produced in the [CPM Lab](https://cpm.lrt.unibw.de/) on 20 Intel NUCs. The results can partly be reproduced on a single computer by changing `computation_mode = ComputationMode.parallel_physically` to `computation_mode = ComputationMode.parallel_threads`.
 The results are saved in the folder "results".
 
 </p>
@@ -135,16 +134,16 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe, J. Kahle and B. Alrifaee, "Graph Coloring to Reduce Computation Time in Prioritized Planning", arXiv preprint arXiv:2501.10812.
+P. Scheffe, J. Kahle and B. Alrifaee, "Graph Coloring to Reduce Computation Time in Prioritized Planning", arXiv preprint <a href="https://doi.org/10.48550/arXiv.2501.10812">arXiv:2501.10812</a>.
 <br>
 
 [![Paper](https://img.shields.io/badge/Preprint-Paper-00629B)](https://arxiv.org/abs/2501.10812)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v4.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v7.0)
 
 </summary>
 <p>
 
-Checkout the [the software version 7.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v7.0).
+Checkout the [the software version 7.0](https://github.com/pscheffe/p-dmpc/tree/v7.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -159,17 +158,17 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe, J. Xu and B. Alrifaee, "Limiting Computation Levels in Prioritized Trajectory Planning with Safety Guarantees", 2024 European Control Conference (ECC), Stockholm, Sweden, 2024, doi: 10.23919/ECC64448.2024.10591179.
+P. Scheffe, J. Xu and B. Alrifaee, "Limiting Computation Levels in Prioritized Trajectory Planning with Safety Guarantees", 2024 European Control Conference (ECC), Stockholm, Sweden, 2024, doi: <a href="https://doi.org/10.23919/ECC64448.2024.10591179">10.23919/ECC64448.2024.10591179</a>.
 <br>
 
 [![Paper](https://img.shields.io/badge/-Paper-00629B?logo=IEEE)](https://doi.org/10.23919/ECC64448.2024.10591179)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v5.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v5.0)
 [![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://youtu.be/di6X6XTGt88)
 
 </summary>
 <p>
 
-Checkout the [the software version 5.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v5.0).
+Checkout the [the software version 5.0](https://github.com/pscheffe/p-dmpc/tree/v5.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -185,18 +184,18 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-Scheffe, P., Pedrosa, M.V.A., Flaßkamp, K., Alrifaee, B. (2024). Prioritized Trajectory Planning for Networked Vehicles Using Motion Primitives. In: Stiller, C., Althoff, M., Burger, C., Deml, B., Eckstein, L., Flemisch, F. (eds) Cooperatively Interacting Vehicles. Springer, Cham. doi: 10.1007/978-3-031-60494-2_9
+Scheffe, P., Pedrosa, M.V.A., Flaßkamp, K., Alrifaee, B. (2024). Prioritized Trajectory Planning for Networked Vehicles Using Motion Primitives. In: Stiller, C., Althoff, M., Burger, C., Deml, B., Eckstein, L., Flemisch, F. (eds) Cooperatively Interacting Vehicles. Springer, Cham. doi: <a href="https://doi.org/10.1007/978-3-031-60494-2_9">10.1007/978-3-031-60494-2_9</a>
 <br>
 
 <!-- icons from https://simpleicons.org/ -->
 
 [![Paper](https://img.shields.io/badge/Springer-Book-00629B)](https://doi.org/10.1007/978-3-031-60494-2_9)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v3.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v3.0)
 
 </summary>
 <p>
 
-Checkout the [the software version 3.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v3.0).
+Checkout the [the software version 3.0](https://github.com/pscheffe/p-dmpc/tree/v3.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -211,7 +210,7 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe and B. Alrifaee, "A Scaled Experiment Platform to Study Interactions Between Humans and CAVs", 2023 IEEE Intelligent Vehicles Symposium (IV), Anchorage, AK, USA, 2023, doi: 10.1109/IV55152.2023.10186623.
+P. Scheffe and B. Alrifaee, "A Scaled Experiment Platform to Study Interactions Between Humans and CAVs", 2023 IEEE Intelligent Vehicles Symposium (IV), Anchorage, AK, USA, 2023, doi: <a href="https://doi.org/10.1109/IV55152.2023.10186623">10.1109/IV55152.2023.10186623</a>.
 <br>
 This paper has won the Young Research Award of ITSS Germany 2023.
 <br>
@@ -219,13 +218,13 @@ This paper has won the Young Research Award of ITSS Germany 2023.
 <!-- icons from https://simpleicons.org/ -->
 
 [![Paper](https://img.shields.io/badge/-Paper-00629B?logo=IEEE)](https://doi.org/10.1109/IV55152.2023.10186623)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v2.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v2.0)
 [![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://youtu.be/kDIVu0tv9Ro)
 
 </summary>
 <p>
 
-Checkout the [the software version 2.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v2.0).
+Checkout the [the software version 2.0](https://github.com/pscheffe/p-dmpc/tree/v2.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -239,13 +238,13 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe, M. V. A. Pedrosa, K. Flaßkamp and B. Alrifaee, "Receding Horizon Control Using Graph Search for Multi-Agent Trajectory Planning", in IEEE Transactions on Control Systems Technology, 2022, doi: 10.1109/TCST.2022.3214718.
+P. Scheffe, M. V. A. Pedrosa, K. Flaßkamp and B. Alrifaee, "Receding Horizon Control Using Graph Search for Multi-Agent Trajectory Planning", in IEEE Transactions on Control Systems Technology, 2022, doi: <a href="https://doi.org/10.1109/TCST.2022.3214718">10.1109/TCST.2022.3214718</a>.
 <br>
 
 <!-- icons from https://simpleicons.org/ -->
 
 [![Paper](https://img.shields.io/badge/-Paper-00629B?logo=IEEE)](https://doi.org/10.1109/TCST.2022.3214718)
-[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/embedded-software-laboratory/p-dmpc/tree/v1.0)
+[![Repository](https://img.shields.io/badge/-GitHub-181717?logo=GitHub)](https://github.com/pscheffe/p-dmpc/tree/v1.0)
 [![Video](https://img.shields.io/badge/-Video-FF0000?logo=YouTube)](https://www.youtube.com/watch?v=7LB7I5SOpQE)
 [![Code Ocean](https://codeocean.com/codeocean-assets/badge/open-in-code-ocean.svg)](https://codeocean.com/capsule/7778016)
 
@@ -254,7 +253,7 @@ P. Scheffe, M. V. A. Pedrosa, K. Flaßkamp and B. Alrifaee, "Receding Horizon Co
 
 <img src="./docs/media/3-circle_rhgs.gif" width=640/>
 
-Checkout the [the software version 1.0](https://github.com/embedded-software-laboratory/p-dmpc/tree/v1.0).
+Checkout the [the software version 1.0](https://github.com/pscheffe/p-dmpc/tree/v1.0).
 The results of the publication can be reproduced by running
 
 ```matlab
@@ -268,7 +267,7 @@ The results are saved in the folder "results".
 
 <details>
 <summary>
-P. Scheffe, G. Dorndorf, and B. Alrifaee, “Increasing Feasibility with Dynamic Priority Assignment in Distributed Trajectory Planning for Road Vehicles”, in IEEE International Conference on Intelligent Transportation Systems (ITSC), 2022, pp. 3873–3879. doi: 10.1109/ITSC55140.2022.9922028.
+P. Scheffe, G. Dorndorf, and B. Alrifaee, “Increasing Feasibility with Dynamic Priority Assignment in Distributed Trajectory Planning for Road Vehicles”, in IEEE International Conference on Intelligent Transportation Systems (ITSC), 2022, pp. 3873–3879. doi: <a href="https://doi.org/10.1109/ITSC55140.2022.9922028">10.1109/ITSC55140.2022.9922028</a>.
 <br>
 
 <!-- icons from https://simpleicons.org/ -->
@@ -284,7 +283,6 @@ The code is implemented in [the CPM Lab software repository](https://github.com/
 
 </p>
 </details>
-
 
 ## Acknowledgements
 
